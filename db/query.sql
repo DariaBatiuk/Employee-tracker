@@ -10,6 +10,12 @@
 -- ON roles.department_id = departments.id
 -- ORDER BY departments.department_name, roles.salary;
 
-SELECT * FROM department_name
+SELECT * FROM departments;
 
-SELECT id 
+SELECT roles.id, roles.title, roles.salary, departments.department_name FROM roles
+JOIN departments ON roles.department_id = departments.id;
+
+SELECT employees.id, employees.first_name, employees.last_name, roles.title, 
+departments.department_name, roles.salary FROM employees
+JOIN roles ON employees.roles_id = roles.id
+JOIN departments ON roles.department_id = departments.id
