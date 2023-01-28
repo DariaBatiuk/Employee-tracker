@@ -8,8 +8,8 @@ VALUES (1, "Softwaree Engineer", 100000),
        (2, "Account Manager", 5000),
        (2, "Accountant", 3000);
 
-INSERT INTO employees (role_id, first_name, last_name)
-VALUES (1, "Daria", "Batiuk"),
-       (1, "Valentina", "Batiuk"),
-       (2, "Michael", "Batiuk"),
-       (2, "Nikita", "Batiuk");
+INSERT INTO employees (role_id, first_name, last_name, manager_id)
+VALUES (1, "Daria", "Batiuk",null ),
+       (1, "Valentina", "Batiuk", 1),
+       (2, "Michael", "Batiuk", 2),
+       (2, "Nikita", "Batiuk", 2);
