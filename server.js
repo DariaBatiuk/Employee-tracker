@@ -108,6 +108,7 @@ const inquirer = require("inquirer");
 const fs = require("fs");
 const mysql = require('mysql2');
 const cTable = require('console.table');
+const { abort } = require("process");
 
 
 const db = mysql.createConnection(
@@ -134,16 +135,24 @@ const questionsList =[
 			"Add a role",	
 			"View all employees", 
 			"Add an employee", 
-			"Exit"
+			"Exit",
 		],
   },
 ]
 
+const validateInput = (userInput) =>{
+	if (userInput == ""){
+		return "Please write your answer to the question"
+	} else {
+		return true;
+	}
+}
+
 function initQuestions() {
 	return inquirer.prompt(questionsList)
 	.then((answer) => {
-		if (answer.choice === "View all departments") {
-			viewDepertments();
+		if (answer.choice == "View all departments") {
+			viewDepartments();
 		} else if (answer.choice === "Add a department") {
 			addDepartment();
 		} else if (answer.choice === "View all roles") {
@@ -160,4 +169,65 @@ function initQuestions() {
 		}
 	})
 };
+
+
+function viewDepartments () {
+	db.query('SELECT * FROM departments;', function (err, results) {
+		if (err) throw err;
+		console.table('\n', results, '\n');
+		initQuestions(); 
+	});
+	
+}
+
+function viewRoles () {
+	db.query('SELECT roles.id, roles.title, roles.salary, departments.department_name FROM roles JOIN departments ON roles.department_id = departments.id;', function (err, results) {
+		console.table('\n', results, '\n');
+		initQuestions(); 
+	});
+};
+
+function viewEmployees() {
+	db.query('SELECT employees.id, employees.first_name, employees.last_name, roles.title, departments.department_name, roles.salary, employees.manager_id FROM employees JOIN roles ON employees.role_id = roles.id 	JOIN departments ON roles.department_id = departments.id', function (err, results) {
+		console.table('\n', results, '\n');
+		initQuestions(); 
+	});
+}
+
+function addDepartment() {
+	return inquirer.prompt([{
+		type: "input",
+    name: "departmentName",
+    message: "What is the name of the department?",
+		validate: validateInput,
+	}		
+	]) //change this/////////////////////////////////////////////////////////
+	.then((answer) => {
+		db.query('INSERT INTO departments SET ?', {department_name: answer.departmentName,}, (err, results) => {
+			console.table(`'\n' Department ${answer.departmentName} is added to the database. '\n'`);
+			initQuestions(); 
+		}) 
+	})
+};
+
+function addRole () {
+	return inquirer.prompt([{
+		type: "input",
+		name: "roleName",
+		message: "What is the name of new role?",
+		validate: validateInput,
+	}])
+	.then((answer) => {
+		db.query()
+	})
+}
+
+
+
+
+
+
+
+
+
 initQuestions();
