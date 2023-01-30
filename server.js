@@ -109,7 +109,7 @@ function addDepartment() {
         { department_name: answer.departmentName },
         (err, results) => {
           console.table(
-            `'\n' Department ${answer.departmentName} is added to the database. '\n'`
+            `\n\n  Department ${answer.departmentName} is added to the database. \n\n `
           );
           initQuestions();
         }
@@ -158,7 +158,7 @@ function addRole() {
           (err, results) => {
             if (err) throw err;
             console.table(
-              `'\n' Role ${results.title} is added to the ${answer.departmentName} department. '\n'`
+              `\n\n Role ${results.title} is added to the ${answer.departmentName} department. \n\n `
             );
             initQuestions();
           }
@@ -171,8 +171,8 @@ function addEmployee() {
   db.query(`SELECT * FROM roles;`, (err, roles) => {
     if (err) throw err;
     let rolesList = roles.map((role) => ({name: role.title, value: role.id}));
-		console.log(roles);
-		console.log(rolesList);
+		// console.log(roles);
+		// console.log(rolesList);
     db.query(`SELECT * FROM employees;`, (err, employees) => {
 			if (err) throw err;
     	let employeesList = employees.map((employee) => ({name: employee.first_name + " " + employee.last_name, value: employee.id})); 
@@ -205,6 +205,8 @@ function addEmployee() {
           },
         ])
         .then((answer) => {
+					let roleTitle = rolesList.find((role) => role.value === answer.role_id)
+        .name;
             db.query(
               "INSERT INTO employees SET ?",
               {
@@ -216,11 +218,12 @@ function addEmployee() {
               (err, results) => {
                 if (err) throw err;
                 console.table(
-                  `'\n' Employee ${answer.first_name} ${answer.last_name} is added to the ${answer.role_id} role. '\n'`
+                  `\n\n Employee ${answer.first_name} ${answer.last_name} is added to the ${roleTitle} role. \n\n `
                 );
+								initQuestions();
               }
             );
-          
+						
         });
     });
   });
@@ -245,11 +248,14 @@ function deleteEmployee () {
 				(err, results) => {
 					if (err) throw err;
 					console.table(
-						`'\n' Employee was removed. '\n'`
+						`\n\n Employee was removed. \n\n`
 					);
+					initQuestions();
 				}
 			);
+			
 		})
+		
 	})
 }
 
