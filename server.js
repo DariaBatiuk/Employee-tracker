@@ -1,115 +1,8 @@
-// const express = require('express');
-// // Import and require mysql2
-// const mysql = require('mysql2');
-
-// const PORT = process.env.PORT || 3001;
-// const app = express();
-
-// // Express middleware
-// app.use(express.urlencoded({ extended: false }));
-// app.use(express.json());
-
-// // Connect to database
-// const db = mysql.createConnection(
-//   {
-//     host: 'localhost',
-//     // MySQL username,
-//     user: 'root',
-//     // TODO: Add MySQL password here
-//     password: '12345',
-//     database: 'departments_db'
-//   },
-//   console.log(`Connected to the departments_db database.`)
-// );
-
-// // Create a department
-// app.post('/api/new-department', ({ body }, res) => {
-//   const sql = `INSERT INTO departments (department_name)
-//     VALUES (?)`;
-//   const params = [body.department_name];
-  
-//   db.query(sql, params, (err, result) => {
-//     if (err) {
-//       res.status(400).json({ error: err.message });
-//       return;
-//     }
-//     res.json({
-//       message: 'success',
-//       data: body
-//     });
-//   });
-// });
-
-// // Read all departments
-// app.get('/api/departments', (req, res) => {
-//   const sql = `SELECT * FROM departments`;
-  
-//   db.query(sql, (err, rows) => {
-//     if (err) {
-//       res.status(500).json({ error: err.message });
-//        return;
-//     }
-//     res.json({
-//       message: 'success',
-//       data: rows
-//     });
-//   });
-// });
-
-// // Delete a department
-// app.delete('/api/department/:id', (req, res) => {
-//   const sql = `DELETE FROM departments WHERE id = ?`;
-//   const params = [req.params.id];
-  
-//   db.query(sql, params, (err, result) => {
-//     if (err) {
-//       res.statusMessage(400).json({ error: res.message });
-//     } else if (!result.affectedRows) {
-//       res.json({
-//       message: 'Department not found'
-//       });
-//     } else {
-//       res.json({
-//         message: 'deleted',
-//         changes: result.affectedRows,
-//         id: req.params.id
-//       });
-//     }
-//   });
-// });
-
-// ////////////////////////////////Check from here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// // Read list of all roles and associated department name using LEFT JOIN
-// app.get('/api/department-roles', (req, res) => {
-//   const sql = `SELECT departments.department_name AS department, roles.title FROM roles LEFT JOIN departments ON reviews.movie_id = movies.id ORDER BY movies.movie_name;`;
-//   db.query(sql, (err, rows) => {
-//     if (err) {
-//       res.status(500).json({ error: err.message });
-//       return;
-//     }
-//     res.json({
-//       message: 'success',
-//       data: rows
-//     });
-//   });
-// });
-
-// // // Default response for any other request (Not Found)
-// app.use((req, res) => {
-//   res.status(404).end();
-// });
-
-// app.listen(PORT, () => {
-//   console.log(`Server running on port ${PORT}`);
-// });
-
-
 const inquirer = require("inquirer");
 const fs = require("fs");
 const mysql = require('mysql2');
 const cTable = require('console.table');
 const { abort } = require("process");
-
 
 const db = mysql.createConnection(
   {
@@ -181,14 +74,14 @@ function viewDepartments () {
 }
 
 function viewRoles () {
-	db.query('SELECT roles.id, roles.title, roles.salary, departments.department_name FROM roles JOIN departments ON roles.department_id = departments.id;', function (err, results) {
+	db.query('SELECT roles.id, roles.title, roles.salary, departments.department_name FROM roles JOIN departments ON roles.department_id = departments.id ORDER BY departments.department_name;', function (err, results) {
 		console.table('\n', results, '\n');
 		initQuestions(); 
 	});
 };
 
 function viewEmployees() {
-	db.query('SELECT employees.id, employees.first_name, employees.last_name, roles.title, departments.department_name, roles.salary, employees.manager_id FROM employees JOIN roles ON employees.role_id = roles.id 	JOIN departments ON roles.department_id = departments.id', function (err, results) {
+	db.query("SELECT employees.id, employees.first_name, employees.last_name, roles.title, 	departments.department_name, roles.salary, concat (manager.first_name , ' ', manager.last_name ) AS manager FROM employees 	JOIN roles ON employees.role_id = roles.id JOIN departments ON roles.department_id = departments.id LEFT JOIN employees manager on manager.id = employees.manager_id ORDER BY departments.department_name", function (err, results) {
 		console.table('\n', results, '\n');
 		initQuestions(); 
 	});
@@ -280,21 +173,88 @@ function addEmployee() {
 			// choices: rolesList,
 		},
 	])
-		.then((answer) => {
-			let roleId = roles.find(role => role.title === answer.role_id).id;
-			db.query('INSERT INTO employees SET ?', 
-			{	first_name: answer.first_name,
-				last_name: answer.last_name,
-				role_id: roleId,
-				manager_id: answer.manager_id,
-			}, 
-			(err, results) => {
-				if (err) throw err;
-				console.table(`'\n' Employee ${results.first_name} ${results.last_name} is added to the ${answer.role_id} role. '\n'`);
-				initQuestions(); 
-			})
+		.then ((answer) => {
+			let roleId = roles.find(role => role.title === answer.manager_id);
+			if(!answer.manager_id) {
+				db.query ('INSERT INTO employees SET ?', 
+				{	first_name: answer.first_name,
+					last_name: answer.last_name,
+					role_id: roleId,
+					manager_id: null,
+				},  (err, results) => {
+					if (err) throw err;
+					answer.manager_id = results.insertId;
+					db.query('UPDATE employees SET manager_id = ? WHERE id = ?', [answer.manager_id, answer.manager_id], (err) => {
+						if (err) throw err;
+						console.table(`'\n' Employee ${answer.first_name} ${answer.last_name} is added to the ${answer.role_id} role. '\n'`);
+						initQuestions(); 
+					});
+				});
+			} else {
+				db.query('INSERT INTO employees SET ?', 
+				{	first_name: answer.first_name,
+					last_name: answer.last_name,
+					role_id: roleId,
+					manager_id: answer.manager_id,
+				}, 
+				(err, results) => {
+					if (err) throw err;
+					console.table(`'\n' Employee ${answer.first_name} ${answer.last_name} is added to the ${answer.role_id} role. '\n'`);
+				})
+			}
 		})
-	})	
-}
+		// .then((answer) => {
+		// 	let roleId = roles.find(role => role.title === answer.role_id).id;
+		// 	if (!answer.manager_id) {
+		// 		db.query('INSERT INTO employees SET ?', {		first_name: answer.first_name,
+		// 			last_name: answer.last_name,
+		// 			role_id: roleId,
+		// 			manager_id: null,
+		// 		}, 
+		// 		(err, results) => {
+		// 			if (err) throw err;
+		// 			answer.manager_id = results.insertId;
+		// 			db.query('UPDATE employees SET manager_id = ? WHERE id = ?', [answer.manager_id, answer.manager_id], (err) => {
+		// 				if (err) throw err;
+		// 				console.table(`'\n' Employee ${answer.first_name} ${answer.last_name} is added to the ${answer.role_id} role. '\n'`);
+		// 				initQuestions(); 
+		// 			});
+		// 		} else {
+		// 		db.query('INSERT INTO employees SET ?', 
+		// 		{	first_name: answer.first_name,
+		// 			last_name: answer.last_name,
+		// 			role_id: roleId,
+		// 			manager_id: answer.manager_id,
+		// 		}, 
+		// 		(err, results) => {
+		// 				if (err) throw err;
+		// 				console.table(`'\n' Employee ${answer.first_name} ${answer.last_name} is added to the ${answer.role_id} role. '\n'`);
+		// 		})
+		// 	}
+		// })				
+	})
+};
+
+
+
+		// 	if (!answer.manager_id) {
+		// 		answer.manager_id = results.insertId;
+		// }
+		// 	db.query('INSERT INTO employees SET ?', 
+		// 	{	first_name: answer.first_name,
+		// 		last_name: answer.last_name,
+		// 		role_id: roleId,
+		// 		manager_id: answer.manager_id,
+		// 	}, 
+		// 	(err, results) => {
+		// 		if (err) throw err;
+		// 		console.table(`'\n' Employee ${results.first_name} ${results.last_name} is added to the ${answer.role_id} role. '\n'`);
+		// 		initQuestions(); 
+		// 	})
+// 		})
+// 	})	
+// }
+
+
 
 initQuestions();

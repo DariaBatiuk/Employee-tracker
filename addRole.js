@@ -1,37 +1,63 @@
-
-// db.query("SELECT id, title FROM role", function (err, roles) {
-//         if (err) throw err;
-//         // Use map to extract the title of the roles and store them in an array
-//         const roleTitles = roles.map(role => role.title);
-//         inquirer
-//           .prompt([
-//             {
-//               name: 'first_name',
-//               type: 'input',
-//               message: 'Enter the employees first name:'
-//             },
-//             {
-//               name: 'last_name',
-//               type: 'input',
-//               message: 'Enter the employees last name:'
-//             },
-//             {
-//               name: 'role_id',
-//               type: 'list',
-//               message: 'Select the employees role:',
-//               choices: roleTitles
-//             },
-//             {
-//               name: 'manager_id',
-//               type: 'input',
-//               message: 'Enter the employees manager id:'
-//             }
-//           ])
-//           .then(answers => {
-//             const selectedRole = roles.find(role => role.title === answers.role_id);
-//             db.query(INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ('${answers.first_name}', '${answers.last_name}', '${selectedRole.id}', '${answers.manager_id}'), function (err, result) {
-//               if (err) throw err;
-//               console.log("1 record inserted");
-//               promptUser();
-//             });
-//           });
+function addEmployee() {
+	db.query (`SELECT * FROM roles;`, (err, roles) =>{
+		if (err) throw err;
+		let rolesList = roles.map(role => role.title);
+		return inquirer.prompt([
+			{
+			type: "input",
+			name: "first_name",
+			message: "What is the first name of the employee?",
+			validate: validateInput,
+		},
+		{
+			type: "input",
+			name: "last_name",
+			message: "What is the last name of the employee?",
+			validate: validateInput,
+		},
+		{
+			type: 'list',
+			name: "role_id",			
+			message: "What is the role of the employee?",
+			choices: rolesList,
+		},
+		{
+			type: 'input',
+			name: "manager_id",			
+			message: "What is the manager's id of the employee?",
+			// choices: rolesList,
+		},
+	])
+		.then((answer) => {
+			let roleId = roles.find(role => role.title === answer.role_id).id;
+			if (!answer.manager_id) {
+				db.query('INSERT INTO employees SET ?', 
+				{	first_name: answer.first_name,
+					last_name: answer.last_name,
+					role_id: roleId,
+					manager_id: null,
+				}, 
+				(err, results) => {
+					if (err) throw err;
+					answer.manager_id = results.insertId;
+					db.query('UPDATE employees SET manager_id = ? WHERE id = ?', [answer.manager_id, answer.manager_id], (err) => {
+						if (err) throw err;
+						console.table(`'\n' Employee ${answer.first_name} ${answer.last_name} is added to the ${answer.role_id} role. '\n'`);
+						initQuestions(); 
+					});
+				});
+				} else {
+				db.query('INSERT INTO employees SET ?', 
+				{	first_name: answer.first_name,
+					last_name: answer.last_name,
+					role_id: roleId,
+					manager_id: answer.manager_id,
+				}, 
+				(err, results) => {
+					if (err) throw err;
+					console.table(`'\n' Employee ${answer.first_name} ${answer.last_name} is added to the ${answer.role_id} role. '\n'`);
+				})
+			}
+		})
+	})
+};
