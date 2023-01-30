@@ -24,8 +24,10 @@ const questionsList = [
     choices: [
       "View all departments",
       "Add a department",
+			"Remove a department",
       "View all roles",
       "Add a role",
+			"Remove a role",
       "View all employees",
       "Add an employee",
 			"Remove an employee",
@@ -48,11 +50,15 @@ function initQuestions() {
       viewDepartments();
     } else if (answer.choice === "Add a department") {
       addDepartment();
-    } else if (answer.choice === "View all roles") {
+    } else if (answer.choice === "Remove a department") {
+			deleteDepartment();
+		} else if (answer.choice === "View all roles") {
       viewRoles();
     } else if (answer.choice === "Add a role") {
       addRole();
-    } else if (answer.choice === "View all employees") {
+    } else if (answer.choice === "Remove a role") {
+			deleteRole();
+		} else if (answer.choice === "View all employees") {
       viewEmployees();
     } else if (answer.choice === "Add an employee") {
       addEmployee();
@@ -158,7 +164,7 @@ function addRole() {
           (err, results) => {
             if (err) throw err;
             console.table(
-              `\n\n Role ${results.title} is added to the ${answer.departmentName} department. \n\n `
+              `\n\n Role ${answer.title} is added to the ${answer.departmentName} department. \n\n `
             );
             initQuestions();
           }
@@ -252,10 +258,64 @@ function deleteEmployee () {
 					);
 					initQuestions();
 				}
-			);
-			
-		})
-		
+			);			
+		})		
+	})
+}
+
+function deleteRole () {
+	db.query(`SELECT * FROM roles;`, (err, roles) => {
+		if (err) throw err;
+		let rolesList = roles.map((role) => ({name: role.title, value: role.id}));
+		return inquirer.prompt ([{
+			type: "list",
+			name: "role_id",
+			message: "Which role you want to delete?",
+			choices: rolesList,
+		},])
+		.then((answer) => {
+			db.query(
+				"DELETE FROM roles WHERE ?",
+				{
+					id: answer.role_id,
+				},
+				(err, results) => {
+					if (err) throw err;
+					console.table(
+						`\n\n The role was removed. \n\n`
+					);
+					initQuestions();
+				}
+			);			
+		})		
+	})
+};
+
+function deleteDepartment () {
+	db.query(`SELECT * FROM departments;`, (err, departments) => {
+		if (err) throw err;
+		let departmentsList = departments.map((department) => ({name: department.department_name, value: department.id}));
+		return inquirer.prompt ([{
+			type: "list",
+			name: "department_id",
+			message: "Which department you want to delete?",
+			choices: departmentsList,
+		},])
+		.then((answer) => {
+			db.query(
+				"DELETE FROM roles WHERE ?",
+				{
+					id: answer.department_id,
+				},
+				(err, results) => {
+					if (err) throw err;
+					console.table(
+						`\n\n The department was removed. \n\n`
+					);
+					initQuestions();
+				}
+			);			
+		})		
 	})
 }
 
