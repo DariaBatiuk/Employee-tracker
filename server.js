@@ -201,7 +201,7 @@ function addDepartment() {
     message: "What is the name of the department?",
 		validate: validateInput,
 	}		
-	]) //change this/////////////////////////////////////////////////////////
+	]) 
 	.then((answer) => {
 		db.query('INSERT INTO departments SET ?', {department_name: answer.departmentName,}, (err, results) => {
 			console.table(`'\n' Department ${answer.departmentName} is added to the database. '\n'`);
@@ -211,23 +211,90 @@ function addDepartment() {
 };
 
 function addRole () {
-	return inquirer.prompt([{
-		type: "input",
-		name: "roleName",
-		message: "What is the name of new role?",
-		validate: validateInput,
-	}])
-	.then((answer) => {
-		db.query()
-	})
+	db.query (`SELECT * FROM departments;`, (err, departments) =>{
+		if (err) throw err;
+		let departmentsList = departments.map(department => department.department_name);
+		return inquirer.prompt([
+			{
+			type: "input",
+			name: "title",
+			message: "What is the name of new role?",
+			validate: validateInput,
+		},
+		{
+			type: "input",
+			name: "salary",
+			message: "What is the salary for this role?",
+			validate: validateInput,
+		},
+		{
+			type: 'list',
+			name: "departmentName",			
+			message: "What is the department for this role?",
+			choices: departmentsList,
+		},
+	])
+		.then((answer) => {
+			let departmentId = departments.find(department => department.department_name === answer.departmentName).id;
+			db.query('INSERT INTO roles SET ?', 
+			{	title: answer.title,
+				salary: answer.salary,
+				department_id: departmentId,
+			}, 
+			(err, results) => {
+				if (err) throw err;
+				console.table(`'\n' Role ${results.title} is added to the ${answer.departmentName} department. '\n'`);
+				initQuestions(); 
+			})
+		})
+	})	
+};
+
+function addEmployee() {
+	db.query (`SELECT * FROM roles;`, (err, roles) =>{
+		if (err) throw err;
+		let rolesList = roles.map(role => role.title);
+		return inquirer.prompt([
+			{
+			type: "input",
+			name: "first_name",
+			message: "What is the first name of the employee?",
+			validate: validateInput,
+		},
+		{
+			type: "input",
+			name: "last_name",
+			message: "What is the last name of the employee?",
+			validate: validateInput,
+		},
+		{
+			type: 'list',
+			name: "role_id",			
+			message: "What is the role of the employee?",
+			choices: rolesList,
+		},
+		{
+			type: 'input',
+			name: "manager_id",			
+			message: "What is the manager's id of the employee?",
+			// choices: rolesList,
+		},
+	])
+		.then((answer) => {
+			let roleId = roles.find(role => role.title === answer.role_id).id;
+			db.query('INSERT INTO employees SET ?', 
+			{	first_name: answer.first_name,
+				last_name: answer.last_name,
+				role_id: roleId,
+				manager_id: answer.manager_id,
+			}, 
+			(err, results) => {
+				if (err) throw err;
+				console.table(`'\n' Employee ${results.first_name} ${results.last_name} is added to the ${answer.role_id} role. '\n'`);
+				initQuestions(); 
+			})
+		})
+	})	
 }
-
-
-
-
-
-
-
-
 
 initQuestions();
