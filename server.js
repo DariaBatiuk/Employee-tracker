@@ -301,7 +301,7 @@ function deleteDepartment () {
 		},])
 		.then((answer) => {
 			db.query(
-				"DELETE FROM roles WHERE ?",
+				"DELETE FROM departments WHERE ?",
 				{
 					id: answer.department_id,
 				},
