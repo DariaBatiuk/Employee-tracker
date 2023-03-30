@@ -25,6 +25,7 @@ const questionsList = [
 			"Remove a department",
       "View all roles",
       "Add a role",
+			"Update a role",
 			"Remove a role",
       "View all employees",
       "Add an employee",
@@ -54,6 +55,8 @@ function initQuestions() {
       viewRoles();
     } else if (answer.choice === "Add a role") {
       addRole();
+		} else if (answer.choice === "Update a role") {
+      updateRole();
     } else if (answer.choice === "Remove a role") {
 			deleteRole();
 		} else if (answer.choice === "View all employees") {
@@ -288,6 +291,58 @@ function deleteRole () {
 		})		
 	})
 };
+
+function updateRole() {
+  db.query("SELECT * FROM roles;", function (err, results) {
+    if (err) throw err;
+    let rolesList = results.map((role) => ({
+      name: role.title,
+      value: role.id,
+    }));
+    return inquirer
+      .prompt([
+        {
+          type: "list",
+          name: "roleId",
+          message: "Which role do you want to update?",
+          choices: rolesList,
+        },
+        {
+          type: "input",
+          name: "newTitle",
+          message: "What is the new title of the role?",
+          validate: validateInput,
+        },
+        {
+          type: "input",
+          name: "newSalary",
+          message: "What is the new salary of the role?",
+          validate: validateInput,
+        },
+      ])
+      .then((answer) => {
+        db.query(
+          "UPDATE roles SET ? WHERE ?",
+          [
+            {
+              title: answer.newTitle,
+              salary: answer.newSalary,
+            },
+            {
+              id: answer.roleId,
+            },
+          ],
+          (err, results) => {
+            if (err) throw err;
+            console.table(
+              `\n\n Role with ID ${answer.roleId} has been updated to ${answer.newTitle}. \n\n`
+            );
+            initQuestions();
+          }
+        );
+      });
+  });
+}
 
 function deleteDepartment () {
 	db.query(`SELECT * FROM departments;`, (err, departments) => {
